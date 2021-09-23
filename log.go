@@ -3,7 +3,7 @@
 //
 // In the main.go file, use `log.SetLogger(&log.Config{})` to initialize the logger.
 //
-// In other go files, use `log.Info("msg", "the log message")` to print the log messages.
+// In other go files, use `log.Info("the log message", "key", "value")` to print the log messages.
 //
 
 package log
@@ -11,6 +11,7 @@ package log
 import (
 	"fmt"
 	"os"
+	"time"
 
 	golog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -26,6 +27,7 @@ type loggingT struct {
 type Config struct {
 	Level    string
 	Format   string
+	Layout   string
 	NoCaller bool
 }
 
@@ -36,6 +38,10 @@ func configDefaulter(config *Config) {
 
 	if config.Format == "" {
 		config.Format = "text"
+	}
+
+	if config.Layout == "" {
+		config.Layout = "2006-01-02T15:04:05.000000"
 	}
 }
 
@@ -75,8 +81,8 @@ func SetLogger(config *Config) {
 		os.Exit(1)
 	}
 
+	logger = golog.With(logger, "ts", golog.TimestampFormat(time.Now, config.Layout))
 	logger = level.NewFilter(logger, levelOption)
-	logger = golog.With(logger, "ts", golog.DefaultTimestamp)
 
 	if !config.NoCaller {
 		logger = golog.With(logger, "caller", golog.Caller(4))
@@ -86,32 +92,76 @@ func SetLogger(config *Config) {
 }
 
 // With returns a new contextual logger with keyvals prepended
-func With(keyvals ...interface{}) golog.Logger {
-	return golog.With(logging.logger, keyvals...)
+func With(keyvals ...interface{}) loggingT {
+	return loggingT{logger: golog.With(logging.logger, keyvals...)}
 }
 
-// Debug returns a logger that includes a Key/DebugValue pair
-func Debug(keyvals ...interface{}) {
+// Debug prints a msg and Key/DebugValue pair
+func (l *loggingT) Debug(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
+	level.Debug(l.logger).Log(keyvals...)
+}
+
+// Info prints a msg and Key/InfoValue pair
+func (l *loggingT) Info(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
+	level.Info(l.logger).Log(keyvals...)
+}
+
+// Warn prints a msg and Key/WarnValue pair
+func (l *loggingT) Warn(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
+	level.Warn(l.logger).Log(keyvals...)
+}
+
+// Error prints a msg and Key/ErrorValue pair
+func (l *loggingT) Error(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
+	level.Error(l.logger).Log(keyvals...)
+}
+
+// Fatal prints a msg and Key/ErrorValue pair and exit
+func (l *loggingT) Fatal(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
+	level.Error(l.logger).Log(keyvals...)
+	os.Exit(1)
+}
+
+// Debug prints a msg and Key/DebugValue pair
+func Debug(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
 	level.Debug(logging.logger).Log(keyvals...)
 }
 
-// Info returns a logger that includes a Key/InfoValue pair
-func Info(keyvals ...interface{}) {
+// Info prints a msg and Key/InfoValue pair
+func Info(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
 	level.Info(logging.logger).Log(keyvals...)
 }
 
-// Warn returns a logger that includes a Key/WarnValue pair
-func Warn(keyvals ...interface{}) {
+// Warn prints a msg and Key/WarnValue pair
+func Warn(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
 	level.Warn(logging.logger).Log(keyvals...)
 }
 
-// Error returns a logger that includes a Key/ErrorValue pair
-func Error(keyvals ...interface{}) {
+// Error prints a msg and Key/ErrorValue pair
+func Error(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
 	level.Error(logging.logger).Log(keyvals...)
 }
 
-// Fatal returns a logger that includes a Key/ErrorValue pair and exit
-func Fatal(keyvals ...interface{}) {
+// Fatal prints a msg and Key/ErrorValue pair and exit
+func Fatal(msg string, keyvals ...interface{}) {
+	keyvals = prepend(msg, keyvals...)
 	level.Error(logging.logger).Log(keyvals...)
 	os.Exit(1)
+}
+
+func prepend(msg string, keyvals ...interface{}) []interface{} {
+	kvs := make([]interface{}, len(keyvals)+2)
+	kvs[0], kvs[1] = "msg", msg
+	copy(kvs[2:], keyvals)
+
+	return kvs
 }
