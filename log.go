@@ -1,11 +1,26 @@
 //
 // Package log defines some simple functions for logging.
 //
-// In the main.go file, use `log.SetLogger(&log.Config{})` to initialize the logger.
+// In your main.go file, use `log.SetLogger(&log.Config{})` to initialize the logger.
 //
 // In other go files, use `log.Info("the log message", "key", "value")` to print the log messages.
 //
-
+// Example:
+//
+//	log.SetLogger(&log.Config{
+//		Level: "debug",
+//		Format: "text",
+//		Layout: "2006-01-02T15:04:05.000000Z",
+//		NoCaller: false,
+//	})
+//
+//	log.Info("the info log message", "key", "value")
+//	log.Debug("the debug log message")
+//
+//	ctrLog := log.With("name", "controller")
+//	ctrLog.Info("the info log message", "key", "value")
+//	ctrLog.Debug("the debug log message")
+//
 package log
 
 import (
@@ -41,7 +56,7 @@ func configDefaulter(config *Config) {
 	}
 
 	if config.Layout == "" {
-		config.Layout = "2006-01-02T15:04:05.000000"
+		config.Layout = "2006-01-02T15:04:05.000000Z"
 	}
 }
 
