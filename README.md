@@ -1,5 +1,7 @@
 # log
 
+DEPRECATED, please use standard library slog https://pkg.go.dev/log/slog instead.
+
 A simple structured log library.
 
 ```
